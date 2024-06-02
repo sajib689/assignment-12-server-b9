@@ -66,6 +66,19 @@ async function run() {
         
     })
 
+    app.post('/create-payment-intent', async (req, res) => {
+      const {applicationFees} = req.body
+      const amount = parseInt(applicationFees)
+      const paymentIntent = await createPaymentIntents.create({
+        amount: amount,
+        payment_method_types: ['card'],
+        currency: 'usd',
+      })
+      res.send({
+        clientSecret: paymentIntent.client_secret,
+      })
+    })
+
    } finally {
 
   }
