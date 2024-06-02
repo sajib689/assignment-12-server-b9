@@ -3,7 +3,7 @@ const cors = require('cors')
 require('dotenv').config()
 const cookieParser = require('cookie-parser')
 const jwt = require('jsonwebtoken');
-const { MongoClient, ServerApiVersion } = require('mongodb');
+const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 const app = express()
 const port = process.env.PORT || 3000
 
@@ -28,12 +28,28 @@ async function run() {
   try {
     const universityCollection = await client.db('scholarHub').collection('university')
     const usersCollection = await client.db('scholarHub').collection('users')
+    const reviewsCollection = await client.db('scholarHub').collection('reviews')
 
+    // get all university
     app.get('/university', async (req, res) => {
         const result = await universityCollection.find().toArray()
         res.send(result)
     })
-
+    // get single University details
+    app.get('/university/:id', async (req, res) => {
+      const id = req.params.id
+      const query = {_id: new ObjectId(id)}
+      const result = await universityCollection.findOne(query)
+      res.send(result)
+    })
+    // add review
+    app.post('/reviews', async (req, res) => {
+      const query = req.body
+      const result = await reviewsCollection.insertOne(query)
+      res.send(result)
+    })
+    // get reviews
+    
     app.post('/users', async (req, res) => {
         const userData = req.body
         const email = userData?.email
