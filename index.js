@@ -41,7 +41,7 @@ async function run() {
         if (checkUser) {
           return res.status(400).send({ message: 'user already exists'})
         } else {
-          const result = await usersCollection.insertOne(query)
+          const result = await usersCollection.insertOne(userData)
         res.send(result)
         }
         
