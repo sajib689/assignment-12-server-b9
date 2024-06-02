@@ -49,7 +49,10 @@ async function run() {
       res.send(result)
     })
     // get reviews
-    
+    app.get('/reviews', async (req, res) => {
+      const result = await reviewsCollection.find().toArray()
+      res.send(result)
+    })
     app.post('/users', async (req, res) => {
         const userData = req.body
         const email = userData?.email
