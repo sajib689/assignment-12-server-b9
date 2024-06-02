@@ -29,6 +29,7 @@ async function run() {
     const universityCollection = await client.db('scholarHub').collection('university')
     const usersCollection = await client.db('scholarHub').collection('users')
     const reviewsCollection = await client.db('scholarHub').collection('reviews')
+    const paymentsCollection = await client.db('scholarHub').collection('payments')
 
     // get all university
     app.get('/university', async (req, res) => {
@@ -78,6 +79,12 @@ async function run() {
       res.send({
         clientSecret: paymentIntent.client_secret,
       });
+    })
+
+    app.post('/payments', async (req, res) => {
+      const query = req.body
+      const result = await paymentsCollection.insertOne(query)
+      res.send(result)
     })
 
    } finally {
