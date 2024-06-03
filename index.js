@@ -30,6 +30,7 @@ async function run() {
     const usersCollection = await client.db('scholarHub').collection('users')
     const reviewsCollection = await client.db('scholarHub').collection('reviews')
     const paymentsCollection = await client.db('scholarHub').collection('payments')
+    const applicationsCollection = await client.db('scholarHub').collection('applications')
 
     // get all university
     app.get('/university', async (req, res) => {
@@ -84,6 +85,11 @@ async function run() {
     app.post('/payments', async (req, res) => {
       const query = req.body
       const result = await paymentsCollection.insertOne(query)
+      res.send(result)
+    })
+    app.post('/applications', async (req, res) => {
+      const query = req.body
+      const result = await applicationsCollection.insertOne(query)
       res.send(result)
     })
 
