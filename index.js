@@ -66,8 +66,15 @@ async function run() {
     })
     // get reviews
     app.get('/reviews', async (req, res) => {
-      const result = await reviewsCollection.find().toArray()
+      const email = req.query.email
+      if(email) {
+        const result = await reviewsCollection.findOne({ email: email}).toArray()
+        res.send(result)
+      } else {
+        const result = await reviewsCollection.find().toArray()
       res.send(result)
+      }
+      
     })
     app.post('/users', async (req, res) => {
         const userData = req.body
