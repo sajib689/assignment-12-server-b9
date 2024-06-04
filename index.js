@@ -104,11 +104,19 @@ async function run() {
       const result = await paymentsCollection.insertOne(query)
       res.send(result)
     })
+    // post application
     app.post('/applications', async (req, res) => {
       const query = req.body
       const result = await applicationsCollection.insertOne(query)
       res.send(result)
     })
+    // get all applications by email address
+    app.get('/applications', async (req, res) => {
+      const email = req.query.email
+      const result = await applicationsCollection.find({email: email}).toArray()
+      res.send(result)
+    })
+
 
    } finally {
 
