@@ -34,9 +34,18 @@ async function run() {
 
     // get all university
     app.get('/university', async (req, res) => {
-        const result = await universityCollection.find().toArray()
-        res.send(result)
-    })
+      const queryText = req.query.query || '';
+      const query = {
+        $or: [
+          { scholarshipCategory: { $regex: queryText, $options: 'i' } },
+          { universityName: { $regex: queryText, $options: 'i' } },
+          { subjectName: { $regex: queryText, $options: 'i' } },
+        ]
+      };
+      const result = await universityCollection.find(query).sort({ price: -1, postDate: -1 }).toArray();
+      res.send(result);
+    });
+
     // get single University details
     app.get('/university/:id', async (req, res) => {
       const id = req.params.id
@@ -67,7 +76,10 @@ async function run() {
         }
         
     })
-
+    app.get('/users', async (req, res) => {
+      const result = await usersCollection.find().toArray()
+      res.send(result)
+    })
     app.post('/create-payment-intent', async (req, res) => {
       const {price} = req.body
       const amount = parseInt(price * 100)
