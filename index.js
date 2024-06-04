@@ -80,14 +80,14 @@ async function run() {
     app.get('/reviews/:id', async (req, res) => {
       const id = req.params.id
       const query = {_id: new ObjectId(id)}
-      const result = await reviewsCollection.findOne(query).toArray()
+      const result = await reviewsCollection.findOne(query)
       res.send(result)
     })
     // delete single reviews
     app.delete('/reviews/:id', async (req, res) => {
       const id = req.params.id
       const query = {_id: new ObjectId(id)}
-      const result = await reviewsCollection.deleteOne(query).toArray()
+      const result = await reviewsCollection.deleteOne(query)
       res.send(result)
     })
     // update reviews single
@@ -157,18 +157,18 @@ async function run() {
     app.get('/applications/:id', async (req, res) => {
       const id = req.params.id
       const query = {_id: new ObjectId(id)}
-      const result = await applicationsCollection.findOne(query).toArray()
+      const result = await applicationsCollection.findOne(query)
       res.send(result)
     })
     // delete the application by id
     app.get('/applications/:id', async (req, res) => {
       const id = req.params.id
       const query = {_id: new ObjectId(id)}
-      const result = await applicationsCollection.deleteOne(query).toArray()
+      const result = await applicationsCollection.deleteOne(query)
       res.send(result)
     })
     // update application by id
-    
+
 
    } finally {
 
