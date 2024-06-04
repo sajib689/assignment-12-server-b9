@@ -35,15 +35,20 @@ async function run() {
     // get all university
     app.get('/university', async (req, res) => {
       const queryText = req.query.query || '';
-      const query = {
-        $or: [
-          { scholarshipCategory: { $regex: queryText, $options: 'i' } },
-          { universityName: { $regex: queryText, $options: 'i' } },
-          { subjectName: { $regex: queryText, $options: 'i' } },
-        ]
-      };
-      const result = await universityCollection.find(query).sort({ price: -1, postDate: -1 }).toArray();
+      if(queryText) {
+        const query = {
+          $or: [
+            { scholarshipCategory: { $regex: queryText, $options: 'i' } },
+            { universityName: { $regex: queryText, $options: 'i' } },
+            { subjectName: { $regex: queryText, $options: 'i' } },
+          ]
+        };
+        const result = await universityCollection.find(query).sort({ price: -1, postDate: -1 }).toArray();
+        res.send(result);
+      } else {
+        const result = await universityCollection.find().sort({ price: -1, postDate: -1 }).toArray();
       res.send(result);
+      }
     });
 
     // get single University details
