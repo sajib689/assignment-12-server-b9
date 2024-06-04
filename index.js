@@ -105,7 +105,7 @@ async function run() {
       const result = await reviewsCollection.updateOne(query, updateReview, options)
       res.send(result)
     })
-    
+
     app.post('/users', async (req, res) => {
         const userData = req.body
         const email = userData?.email
@@ -153,7 +153,22 @@ async function run() {
       const result = await applicationsCollection.find({email: email}).toArray()
       res.send(result)
     })
-
+    // get single application by id wise
+    app.get('/applications/:id', async (req, res) => {
+      const id = req.params.id
+      const query = {_id: new ObjectId(id)}
+      const result = await applicationsCollection.findOne(query).toArray()
+      res.send(result)
+    })
+    // delete the application by id
+    app.get('/applications/:id', async (req, res) => {
+      const id = req.params.id
+      const query = {_id: new ObjectId(id)}
+      const result = await applicationsCollection.deleteOne(query).toArray()
+      res.send(result)
+    })
+    // update application by id
+    
 
    } finally {
 
