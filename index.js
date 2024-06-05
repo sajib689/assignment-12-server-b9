@@ -143,6 +143,15 @@ async function run() {
       const result = await usersCollection.updateOne(query, updateDoc,options)
       res.send(result)
     })
+    // get the role from users
+    app.get('/users/role/:email', async (req, res) => {
+     const email = req.params.email
+      const query = {email: email}
+      const user = await usersCollection.findOne(query)
+      if(user) {
+        res.send({role: user.role})
+      }
+    })
     // payment gateway methods
     app.post('/create-payment-intent', async (req, res) => {
       const {price} = req.body
