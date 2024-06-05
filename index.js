@@ -168,7 +168,20 @@ async function run() {
       res.send(result)
     })
     // update application by id
-
+    app.put('/applications/:id', async (req, res) => {
+      const id = req.params.id 
+      const query = {_id: new ObjectId(id)}
+      const options = {upset: true}
+      const update = req.body
+      const updateApplication = {
+        $set: {
+           photo: update.photo,
+           'address.village': update.address.village,
+        }
+      }
+      const result = await applicationsCollection.updateOne(query,updateApplication,options)
+      res.send(result)
+    })
 
    } finally {
 
