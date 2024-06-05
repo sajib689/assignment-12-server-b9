@@ -177,6 +177,13 @@ async function run() {
         $set: {
            photo: update.photo,
            'address.village': update.address.village,
+           'address.district': update.address.district,
+           'address.country': update.address.country,
+            gender: update.gender,
+            degree: update.degree,
+            sscResult: update.sscResult,
+            hscResult: update.hscResult,
+            studyGap: update.studyGap,
         }
       }
       const result = await applicationsCollection.updateOne(query,updateApplication,options)
