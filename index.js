@@ -122,6 +122,28 @@ async function run() {
       const result = await usersCollection.find().toArray()
       res.send(result)
     })
+    // delete users
+    app.delete('/users/:id', async (req,res) => {
+      const id = req.params.id
+      const query = {_id: new ObjectId(id)}
+      const result = await usersCollection.deleteOne(query)
+      res.send(result)
+    })
+    // add role
+    app.patch('/users/:id/role', async (req, res) => {
+      const id = req.params.id
+      const query = {_id: new ObjectId(id)}
+      const {role} = req.body
+      const options = {upsert: true}
+      const updateDoc = {
+        $set: {
+          role: role,
+        }
+      }
+      const result = await usersCollection.updateOne(query, updateDoc,options)
+      res.send(result)
+    })
+    // payment gateway methods
     app.post('/create-payment-intent', async (req, res) => {
       const {price} = req.body
       const amount = parseInt(price * 100)
