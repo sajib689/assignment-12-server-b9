@@ -32,6 +32,13 @@ async function run() {
     const paymentsCollection = await client.db('scholarHub').collection('payments')
     const applicationsCollection = await client.db('scholarHub').collection('applications')
 
+       // add university
+       app.post('/university', async (req, res) => {
+        const query = req.body
+        const result = await universityCollection.insertOne(query)
+        res.send(result)
+       })
+
     // get all university
     app.get('/university', async (req, res) => {
       const queryText = req.query.query || '';
@@ -58,6 +65,8 @@ async function run() {
       const result = await universityCollection.findOne(query)
       res.send(result)
     })
+ 
+
     // add review
     app.post('/reviews', async (req, res) => {
       const query = req.body
@@ -68,7 +77,7 @@ async function run() {
     app.get('/reviews', async (req, res) => {
       const email = req.query.email
       if(email) {
-        const result = await reviewsCollection.findOne({ email: email}).toArray()
+        const result = await reviewsCollection.find({ email: email}).toArray()
         res.send(result)
       } else {
         const result = await reviewsCollection.find().toArray()
@@ -105,7 +114,7 @@ async function run() {
       const result = await reviewsCollection.updateOne(query, updateReview, options)
       res.send(result)
     })
-
+    // users api
     app.post('/users', async (req, res) => {
         const userData = req.body
         const email = userData?.email
@@ -178,10 +187,28 @@ async function run() {
       const result = await applicationsCollection.insertOne(query)
       res.send(result)
     })
+    // get all applications
+    app.get('/applications', async (req, res) => {
+      const result = await applicationsCollection.find().toArray()
+      res.send(result)
+    })
     // get all applications by email address
     app.get('/applications', async (req, res) => {
       const email = req.query.email
       const result = await applicationsCollection.find({email: email}).toArray()
+      res.send(result)
+    })
+    // application update by admin
+    app.patch('/applications/:id', async (req, res) => {
+      const id = req.params.id
+      const query = {_id: new ObjectId(id)}
+      const update = req.body 
+      const updateStatus = {
+        $set:{
+          status: update.status,
+        }
+      }
+      const result = await applicationsCollection.updateOne(query,updateStatus)
       res.send(result)
     })
     // get single application by id wise
@@ -220,7 +247,7 @@ async function run() {
       const result = await applicationsCollection.updateOne(query,updateApplication,options)
       res.send(result)
     })
-
+    
    } finally {
 
   }
