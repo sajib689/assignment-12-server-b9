@@ -65,7 +65,13 @@ async function run() {
       const result = await universityCollection.findOne(query)
       res.send(result)
     })
- 
+    // delete university by admin or moderator
+    app.delete('/university/:id', async (req, res) => {
+      const id = req.params.id
+      const query = {_id: new ObjectId(id)}
+      const result = await universityCollection.deleteOne(query)
+      res.send(result)
+    })
 
     // add review
     app.post('/reviews', async (req, res) => {
