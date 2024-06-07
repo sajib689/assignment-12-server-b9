@@ -219,16 +219,18 @@ async function run() {
       const result = await applicationsCollection.insertOne(query)
       res.send(result)
     })
-    // get all applications
-    app.get('/applications', async (req, res) => {
-      const result = await applicationsCollection.find().toArray()
-      res.send(result)
-    })
+   
     // get all applications by email address
     app.get('/applications', async (req, res) => {
       const email = req.query.email
-      const result = await applicationsCollection.find({email: email}).toArray()
-      res.send(result)
+      if(email) {
+        const result = await applicationsCollection.find({email: email}).toArray()
+        res.send(result)
+      } else {
+        const result = await applicationsCollection.find().toArray()
+        res.send(result)
+      }
+     
     })
     // application update by admin
     app.patch('/applications/:id', async (req, res) => {
@@ -241,6 +243,20 @@ async function run() {
         }
       }
       const result = await applicationsCollection.updateOne(query,updateStatus)
+      res.send(result)
+    })
+    // pathc for feedback
+    app.put('/applications/:id', async (req, res) => {
+      const id = req.params.id
+      const query = {_id: new ObjectId(id)}
+      const update = req.body
+      const options = {upsert: true}
+      const updateDoc = {
+        $set: {
+          feedback: update.feedback
+        }
+      }
+      const result = await applicationsCollection.updateOne(query, updateDoc, options)
       res.send(result)
     })
     // get single application by id wise
