@@ -72,7 +72,33 @@ async function run() {
       const result = await universityCollection.deleteOne(query)
       res.send(result)
     })
-
+    // update university by admin and moderatter
+    app.put('/university/:id', async (req, res) => {
+      const id = req.params.id
+      const query = {_id: new ObjectId(id)}
+      const options = {upsert: true}
+      const update = req.body
+      const updateUniversity = {
+        $set: {
+          scholarshipName: update.scholarshipName,
+          universityName: update.universityName,
+          universityImage: update.universityImage,
+          country: update.country,
+          city: update.city,
+          universityWorldRank: update.universityWorldRank,
+          subjectName: update.subjectName,
+          scholarshipCategory: update.scholarshipCategory,
+          degree: update.degree,
+          tuitionFees: update.tuitionFees,
+          applicationFees: update.applicationFees,
+          serviceCharge: update.serviceCharge,
+          applicationDeadline: update.applicationDeadline,
+          postDate: update.postDate,
+        }
+      }
+      const result = await universityCollection.update(query, options, updateUniversity)
+      res.send(result)
+    })
     // add review
     app.post('/reviews', async (req, res) => {
       const query = req.body
