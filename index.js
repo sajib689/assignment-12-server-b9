@@ -96,7 +96,7 @@ async function run() {
           postDate: update.postDate,
         }
       }
-      const result = await universityCollection.update(query, options, updateUniversity)
+      const result = await universityCollection.updateOne(query,updateUniversity, options )
       res.send(result)
     })
     // add review
