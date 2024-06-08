@@ -55,6 +55,21 @@ async function run() {
         })
         
       }
+      // verify admin
+      const verifyAdmin =async (req, res, next) => {
+        const email = req.decoded.email
+        const query = {email: email}
+        const user = await usersCollection.findOne(query)
+        const isAdmin = user?.role === 'admin'
+        const isModerator = user?.role === 'moderator'
+        if(!isAdmin){
+          return res.status(403).send({message: 'forbidden access'})
+        }
+        if(!isModerator){
+          return res.status(403).send({message: 'forbidden access'})
+        }
+        next()
+      }
        // add university
        app.post('/university', async (req, res) => {
         const query = req.body
