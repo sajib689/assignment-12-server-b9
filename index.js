@@ -130,21 +130,25 @@ async function run() {
       res.send(result);
     });
 
-    app.delete('/reviews/:id', verifyJWT, async (req, res) => {
+    app.delete('/reviews/:id', async (req, res) => {
       const id = req.params.id;
       const result = await reviewsCollection.deleteOne({ _id: new ObjectId(id) });
       res.send(result);
     });
 
-    app.put('/reviews/:id', verifyJWT, async (req, res) => {
+     // update reviews single
+     app.put('/reviews/:id', async (req, res) => {
       const id = req.params.id;
+      const query = { _id: new ObjectId(id) };
+      const options = { upsert: true };
       const update = req.body;
       const updateReview = {
         $set: {
-          ...update
+          reviewer_comments: update.reviewer_comments,
+          reviewer_rating: update.reviewer_rating
         }
       };
-      const result = await reviewsCollection.updateOne({ _id: new ObjectId(id) }, updateReview, { upsert: true });
+      const result = await reviewsCollection.updateOne(query, updateReview, options);
       res.send(result);
     });
 
@@ -253,7 +257,7 @@ async function run() {
       res.send(result);
     });
 
-    app.put('/applications/:id', verifyJWT, verifyAdmin, async (req, res) => {
+    app.put('/applications/:id', async (req, res) => {
       const id = req.params.id;
       const update = req.body;
       const updateDoc = {
