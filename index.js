@@ -8,7 +8,9 @@ const app = express()
 const port = process.env.PORT || 3000
 const stripe = require('stripe')(process.env.Pyament_Api_Key)
 app.use(express.json())
-app.use(cors())
+app.use(cors({
+  origin: ['http://localhost:5173']
+}))
 app.use(cookieParser())
 
 
@@ -42,7 +44,8 @@ async function run() {
         if(!req.headers.authorization) {
           return res.status(401).send({message: 'forbidden access'})
         }
-        const token = authorization.split(' ')[1]
+        const token = req.headers.authorization.split(' ')[1];
+      
         jwt.verify(token, process.env.token, (err, decoded) => {
           if(err) {
             return res.status(401).send({message: err.message})
@@ -179,7 +182,7 @@ async function run() {
         }
         
     })
-    app.get('/users', async (req, res) => {
+    app.get('/users',verifyJWT, async (req, res) => {
       const result = await usersCollection.find().toArray()
       res.send(result)
     })
@@ -205,8 +208,11 @@ async function run() {
       res.send(result)
     })
     // get the role from users
-    app.get('/users/role/:email', async (req, res) => {
+    app.get('/users/role/:email',verifyJWT, async (req, res) => {
      const email = req.params.email
+     if(email !== req.decoded.email){
+      return res.status(403).send({message: 'unauthenticated'});
+     }
       const query = {email: email}
       const user = await usersCollection.findOne(query)
       if(user) {
