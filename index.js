@@ -38,7 +38,20 @@ async function run() {
         const token = jwt.sign(user, process.env.token, {expiresIn: '1h'})
         res.send({token})
       })
-
+      const verifyJWT = (req, res, next) => {
+        if(!req.headers.authorization) {
+          return res.status(401).send({message: 'forbidden access'})
+        }
+        const token = authorization.split(' ')[1]
+        jwt.verify(token, process.env.token, (err, decoded) => {
+          if(err) {
+            return res.status(401).send({message: err.message})
+          }
+          req.decoded = decoded
+          next()
+        })
+        
+      }
        // add university
        app.post('/university', async (req, res) => {
         const query = req.body
