@@ -1,23 +1,19 @@
-const express = require('express')
-const cors = require('cors')
-require('dotenv').config()
-const cookieParser = require('cookie-parser')
+const express = require('express');
+const cors = require('cors');
+require('dotenv').config();
+const cookieParser = require('cookie-parser');
 const jwt = require('jsonwebtoken');
 const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
-const app = express()
-const port = process.env.PORT || 3000
-const stripe = require('stripe')(process.env.Pyament_Api_Key)
-app.use(express.json())
-app.use(cors({
-  origin: ['http://localhost:5173']
-}))
-app.use(cookieParser())
+const stripe = require('stripe')(process.env.Pyament_Api_Key);
 
+const app = express();
+const port = process.env.PORT || 3000;
 
+app.use(express.json());
+app.use(cors({ origin: ['http://localhost:5173'] }));
+app.use(cookieParser());
 
 const uri = `mongodb+srv://${process.env.Db_User}:${process.env.Db_Password}@cluster0.2m0rny5.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0`;
-
-
 const client = new MongoClient(uri, {
   serverApi: {
     version: ServerApiVersion.v1,
@@ -28,326 +24,277 @@ const client = new MongoClient(uri, {
 
 async function run() {
   try {
-    const universityCollection = await client.db('scholarHub').collection('university')
-    const usersCollection = await client.db('scholarHub').collection('users')
-    const reviewsCollection = await client.db('scholarHub').collection('reviews')
-    const paymentsCollection = await client.db('scholarHub').collection('payments')
-    const applicationsCollection = await client.db('scholarHub').collection('applications')
+    await client.connect();
+    
+    const db = client.db('scholarHub');
+    const universityCollection = db.collection('university');
+    const usersCollection = db.collection('users');
+    const reviewsCollection = db.collection('reviews');
+    const paymentsCollection = db.collection('payments');
+    const applicationsCollection = db.collection('applications');
 
-      // jwt post 
-      app.post('/jwt', async (req, res) => {
-        const user = req.body
-        const token = jwt.sign(user, process.env.token, {expiresIn: '1h'})
-        res.send({token})
-      })
-      const verifyJWT = (req, res, next) => {
-        if(!req.headers.authorization) {
-          return res.status(401).send({message: 'forbidden access'})
-        }
-        const token = req.headers.authorization.split(' ')[1];
-      
-        jwt.verify(token, process.env.token, (err, decoded) => {
-          if(err) {
-            return res.status(401).send({message: err.message})
-          }
-          req.decoded = decoded
-          next()
-        })
-        
-      }
-      // verify admin
-      const verifyAdmin =async (req, res, next) => {
-        const email = req.decoded.email
-        const query = {email: email}
-        const user = await usersCollection.findOne(query)
-        const isAdmin = user?.role === 'admin'
-        const isModerator = user?.role === 'moderator'
-        if(!isAdmin){
-          return res.status(403).send({message: 'forbidden access'})
-        }
-        if(!isModerator){
-          return res.status(403).send({message: 'forbidden access'})
-        }
-        next()
-      }
-       // add university
-       app.post('/university', async (req, res) => {
-        const query = req.body
-        const result = await universityCollection.insertOne(query)
-        res.send(result)
-       })
+    // JWT generation
+    app.post('/jwt', async (req, res) => {
+      const user = req.body;
+      const token = jwt.sign(user, process.env.token, { expiresIn: '1h' });
+      res.send({ token });
+    });
 
-    // get all university
+    const verifyJWT = (req, res, next) => {
+      const authHeader = req.headers.authorization;
+      if (!authHeader) {
+        return res.status(401).send({ message: 'Unauthorized access' });
+      }
+      const token = authHeader.split(' ')[1];
+      jwt.verify(token, process.env.token, (err, decoded) => {
+        if (err) {
+          return res.status(401).send({ message: 'Unauthorized access' });
+        }
+        req.decoded = decoded;
+        next();
+      });
+    };
+
+    // Verify Admin Middleware
+    const verifyAdmin = async (req, res, next) => {
+      const email = req.decoded.email;
+      const user = await usersCollection.findOne({ email });
+      if (user && (user.role === 'admin' || user.role === 'moderator')) {
+        next();
+      } else {
+        return res.status(403).send({ message: 'Access denied: Admins only' });
+      }
+    };
+
+    // University Routes
+    app.post('/university', verifyJWT, verifyAdmin, async (req, res) => {
+      const university = req.body;
+      const result = await universityCollection.insertOne(university);
+      res.send(result);
+    });
+
     app.get('/university', async (req, res) => {
       const queryText = req.query.query || '';
-      if(queryText) {
-        const query = {
-          $or: [
-            { scholarshipCategory: { $regex: queryText, $options: 'i' } },
-            { universityName: { $regex: queryText, $options: 'i' } },
-            { subjectName: { $regex: queryText, $options: 'i' } },
-          ]
-        };
-        const result = await universityCollection.find(query).sort({ price: -1, postDate: -1 }).toArray();
-        res.send(result);
-      } else {
-        const result = await universityCollection.find().sort({ price: -1, postDate: -1 }).toArray();
+      const query = queryText ? {
+        $or: [
+          { scholarshipCategory: { $regex: queryText, $options: 'i' } },
+          { universityName: { $regex: queryText, $options: 'i' } },
+          { subjectName: { $regex: queryText, $options: 'i' } }
+        ]
+      } : {};
+      const result = await universityCollection.find(query).sort({ price: -1, postDate: -1 }).toArray();
       res.send(result);
+    });
+
+    app.get('/university/:id', async (req, res) => {
+      const id = req.params.id;
+      const result = await universityCollection.findOne({ _id: new ObjectId(id) });
+      res.send(result);
+    });
+
+    app.delete('/university/:id', verifyJWT, verifyAdmin, async (req, res) => {
+      const id = req.params.id;
+      const result = await universityCollection.deleteOne({ _id: new ObjectId(id) });
+      res.send(result);
+    });
+
+    app.put('/university/:id', verifyJWT, verifyAdmin, async (req, res) => {
+      const id = req.params.id;
+      const update = req.body;
+      const updateUniversity = {
+        $set: {
+          ...update
+        }
+      };
+      const result = await universityCollection.updateOne({ _id: new ObjectId(id) }, updateUniversity, { upsert: true });
+      res.send(result);
+    });
+
+    // Review Routes
+    app.post('/reviews', async (req, res) => {
+      const review = req.body;
+      const result = await reviewsCollection.insertOne(review);
+      res.send(result);
+    });
+
+    app.get('/reviews', async (req, res) => {
+      const email = req.query.email;
+      const query = email ? { email } : {};
+      const result = await reviewsCollection.find(query).toArray();
+      res.send(result);
+    });
+
+    app.get('/reviews/:id', async (req, res) => {
+      const id = req.params.id;
+      const result = await reviewsCollection.findOne({ _id: new ObjectId(id) });
+      res.send(result);
+    });
+
+    app.delete('/reviews/:id', verifyJWT, async (req, res) => {
+      const id = req.params.id;
+      const result = await reviewsCollection.deleteOne({ _id: new ObjectId(id) });
+      res.send(result);
+    });
+
+    app.put('/reviews/:id', verifyJWT, async (req, res) => {
+      const id = req.params.id;
+      const update = req.body;
+      const updateReview = {
+        $set: {
+          ...update
+        }
+      };
+      const result = await reviewsCollection.updateOne({ _id: new ObjectId(id) }, updateReview, { upsert: true });
+      res.send(result);
+    });
+
+    // User Routes
+    app.post('/users', async (req, res) => {
+      const userData = req.body;
+      const email = userData?.email;
+      const checkUser = await usersCollection.findOne({ email });
+      if (checkUser) {
+        return res.status(400).send({ message: 'User already exists' });
+      }
+      const result = await usersCollection.insertOne(userData);
+      res.send(result);
+    });
+
+    app.get('/users', verifyJWT, verifyAdmin, async (req, res) => {
+      const result = await usersCollection.find().toArray();
+      res.send(result);
+    });
+
+    app.delete('/users/:id', verifyJWT, verifyAdmin, async (req, res) => {
+      const id = req.params.id;
+      const result = await usersCollection.deleteOne({ _id: new ObjectId(id) });
+      res.send(result);
+    });
+
+    app.patch('/users/:id/role', verifyJWT, verifyAdmin, async (req, res) => {
+      const id = req.params.id;
+      const { role } = req.body;
+      const result = await usersCollection.updateOne(
+        { _id: new ObjectId(id) },
+        { $set: { role } },
+        { upsert: true }
+      );
+      res.send(result);
+    });
+
+    app.get('/users/role/:email', verifyJWT, async (req, res) => {
+      const email = req.params.email;
+      if (email !== req.decoded.email) {
+        return res.status(403).send({ message: 'Unauthorized access' });
+      }
+      const user = await usersCollection.findOne({ email });
+      if (user) {
+        res.send({ role: user.role });
+      } else {
+        res.status(404).send({ message: 'User not found' });
       }
     });
 
-    // get single University details
-    app.get('/university/:id', async (req, res) => {
-      const id = req.params.id
-      const query = {_id: new ObjectId(id)}
-      const result = await universityCollection.findOne(query)
-      res.send(result)
-    })
-    // delete university by admin or moderator
-    app.delete('/university/:id', async (req, res) => {
-      const id = req.params.id
-      const query = {_id: new ObjectId(id)}
-      const result = await universityCollection.deleteOne(query)
-      res.send(result)
-    })
-    // update university by admin and moderatter
-    app.put('/university/:id', async (req, res) => {
-      const id = req.params.id
-      const query = {_id: new ObjectId(id)}
-      const options = {upsert: true}
-      const update = req.body
-      const updateUniversity = {
-        $set: {
-          scholarshipName: update.scholarshipName,
-          universityName: update.universityName,
-          universityImage: update.universityImage,
-          country: update.country,
-          city: update.city,
-          universityWorldRank: update.universityWorldRank,
-          subjectName: update.subjectName,
-          scholarshipCategory: update.scholarshipCategory,
-          degree: update.degree,
-          tuitionFees: update.tuitionFees,
-          applicationFees: update.applicationFees,
-          serviceCharge: update.serviceCharge,
-          applicationDeadline: update.applicationDeadline,
-          postDate: update.postDate,
-        }
-      }
-      const result = await universityCollection.updateOne(query,updateUniversity, options )
-      res.send(result)
-    })
-    // add review
-    app.post('/reviews', async (req, res) => {
-      const query = req.body
-      const result = await reviewsCollection.insertOne(query)
-      res.send(result)
-    })
-    // get reviews
-    app.get('/reviews', async (req, res) => {
-      const email = req.query.email
-      if(email) {
-        const result = await reviewsCollection.find({ email: email}).toArray()
-        res.send(result)
-      } else {
-        const result = await reviewsCollection.find().toArray()
-      res.send(result)
-      }
-      
-    })
-    // get single reviews
-    app.get('/reviews/:id', async (req, res) => {
-      const id = req.params.id
-      const query = {_id: new ObjectId(id)}
-      const result = await reviewsCollection.findOne(query)
-      res.send(result)
-    })
-    // delete single reviews
-    app.delete('/reviews/:id', async (req, res) => {
-      const id = req.params.id
-      const query = {_id: new ObjectId(id)}
-      const result = await reviewsCollection.deleteOne(query)
-      res.send(result)
-    })
-    // update reviews single
-    app.put('/reviews/:id', async (req, res) => {
-      const id = req.params.id
-      const query = {_id: new ObjectId(id)}
-      const options = {upsert: true}
-      const update = req.body 
-      const updateReview = {
-        $set: {
-          reviewer_comments: update.reviewer_comments,
-          reviewer_rating: update.reviewer_rating
-        }
-      }
-      const result = await reviewsCollection.updateOne(query, updateReview, options)
-      res.send(result)
-    })
-    // users api
-    app.post('/users', async (req, res) => {
-        const userData = req.body
-        const email = userData?.email
-        const checkUser = await usersCollection.findOne({ email: email})
-        if (checkUser) {
-          return res.status(400).send({ message: 'user already exists'})
-        } else {
-          const result = await usersCollection.insertOne(userData)
-        res.send(result)
-        }
-        
-    })
-    app.get('/users',verifyJWT, async (req, res) => {
-      const result = await usersCollection.find().toArray()
-      res.send(result)
-    })
-    // delete users
-    app.delete('/users/:id', async (req,res) => {
-      const id = req.params.id
-      const query = {_id: new ObjectId(id)}
-      const result = await usersCollection.deleteOne(query)
-      res.send(result)
-    })
-    // add role
-    app.patch('/users/:id/role', async (req, res) => {
-      const id = req.params.id
-      const query = {_id: new ObjectId(id)}
-      const {role} = req.body
-      const options = {upsert: true}
-      const updateDoc = {
-        $set: {
-          role: role,
-        }
-      }
-      const result = await usersCollection.updateOne(query, updateDoc,options)
-      res.send(result)
-    })
-    // get the role from users
-    app.get('/users/role/:email',verifyJWT, async (req, res) => {
-     const email = req.params.email
-     if(email !== req.decoded.email){
-      return res.status(403).send({message: 'unauthenticated'});
-     }
-      const query = {email: email}
-      const user = await usersCollection.findOne(query)
-      if(user) {
-        res.send({role: user.role})
-      }
-    })
-    // payment gateway methods
+    // Payment Routes
     app.post('/create-payment-intent', async (req, res) => {
-      const {price} = req.body
-      const amount = parseInt(price * 100)
-      console.log(amount)
+      const { price } = req.body;
+      const amount = parseInt(price * 100);
       const paymentIntent = await stripe.paymentIntents.create({
-        amount: amount,
+        amount,
         payment_method_types: ['card'],
         currency: "usd",
-      })
+      });
       res.send({
         clientSecret: paymentIntent.client_secret,
       });
-    })
+    });
 
     app.post('/payments', async (req, res) => {
-      const query = req.body
-      const result = await paymentsCollection.insertOne(query)
-      res.send(result)
-    })
-    // post application
+      const payment = req.body;
+      const result = await paymentsCollection.insertOne(payment);
+      res.send(result);
+    });
+
+    // Application Routes
     app.post('/applications', async (req, res) => {
-      const query = req.body
-      const result = await applicationsCollection.insertOne(query)
-      res.send(result)
-    })
-   
-    // get all applications by email address
+      const application = req.body;
+      const result = await applicationsCollection.insertOne(application);
+      res.send(result);
+    });
+
     app.get('/applications', async (req, res) => {
-      const email = req.query.email
-      if(email) {
-        const result = await applicationsCollection.find({email: email}).toArray()
-        res.send(result)
-      } else {
-        const result = await applicationsCollection.find().toArray()
-        res.send(result)
-      }
-     
-    })
-    // application update by admin
-    app.patch('/applications/:id', async (req, res) => {
-      const id = req.params.id
-      const query = {_id: new ObjectId(id)}
-      const update = req.body 
+      const email = req.query.email;
+      const query = email ? { email } : {};
+      const result = await applicationsCollection.find(query).toArray();
+      res.send(result);
+    });
+
+    app.get('/applications/:id', async (req, res) => {
+      const id = req.params.id;
+      const result = await applicationsCollection.findOne({ _id: new ObjectId(id) });
+      res.send(result);
+    });
+
+    app.delete('/applications/:id', async (req, res) => {
+      const id = req.params.id;
+      const result = await applicationsCollection.deleteOne({ _id: new ObjectId(id) });
+      res.send(result);
+    });
+
+    app.patch('/applications/:id', verifyJWT, verifyAdmin, async (req, res) => {
+      const id = req.params.id;
+      const update = req.body;
       const updateStatus = {
-        $set:{
+        $set: {
           status: update.status,
         }
-      }
-      const result = await applicationsCollection.updateOne(query,updateStatus)
-      res.send(result)
-    })
-    // pathc for feedback
-    app.put('/applications/:id', async (req, res) => {
-      const id = req.params.id
-      const query = {_id: new ObjectId(id)}
-      const update = req.body
-      const options = {upsert: true}
+      };
+      const result = await applicationsCollection.updateOne({ _id: new ObjectId(id) }, updateStatus);
+      res.send(result);
+    });
+
+    app.put('/applications/:id', verifyJWT, verifyAdmin, async (req, res) => {
+      const id = req.params.id;
+      const update = req.body;
       const updateDoc = {
         $set: {
           feedback: update.feedback
         }
-      }
-      const result = await applicationsCollection.updateOne(query, updateDoc, options)
-      res.send(result)
-    })
-    // get single application by id wise
-    app.get('/applications/:id', async (req, res) => {
-      const id = req.params.id
-      const query = {_id: new ObjectId(id)}
-      const result = await applicationsCollection.findOne(query)
-      res.send(result)
-    })
-    // delete the application by id
-    app.delete('/applications/:id', async (req, res) => {
-      const id = req.params.id
-      const query = {_id: new ObjectId(id)}
-      const result = await applicationsCollection.deleteOne(query)
-      res.send(result)
-    })
-    // update application by id
+      };
+      const result = await applicationsCollection.updateOne({ _id: new ObjectId(id) }, updateDoc, { upsert: true });
+      res.send(result);
+    });
+
     app.put('/applications/:id', async (req, res) => {
-      const id = req.params.id 
-      const query = {_id: new ObjectId(id)}
-      const options = {upset: true}
-      const update = req.body
+      const id = req.params.id;
+      const update = req.body;
       const updateApplication = {
         $set: {
-           photo: update.photo,
-           'address.village': update.address.village,
-           'address.district': update.address.district,
-           'address.country': update.address.country,
-            gender: update.gender,
-            degree: update.degree,
-            sscResult: update.sscResult,
-            hscResult: update.hscResult,
-            studyGap: update.studyGap,
+          photo: update.photo,
+          'address.village': update.address.village,
+          'address.district': update.address.district,
+          'address.country': update.address.country,
+          gender: update.gender,
+          degree: update.degree,
+          sscResult: update.sscResult,
+          hscResult: update.hscResult,
+          studyGap: update.studyGap,
         }
-      }
-      const result = await applicationsCollection.updateOne(query,updateApplication,options)
-      res.send(result)
-    })
-    
-   } finally {
-
+      };
+      const result = await applicationsCollection.updateOne({ _id: new ObjectId(id) }, updateApplication, { upsert: true });
+      res.send(result);
+    });
+  } finally {
+    // await client.close(); (Consider commenting this out for long-running server)
   }
 }
+
 run().catch(console.dir);
 
-
 app.get('/', (req, res) => {
-    res.send('Welcome to the server')
-})
+  res.send('Welcome to the server');
+});
 
 app.listen(port, () => {
-    console.log('listening on port ' + port)
-})
+  console.log(`Server listening on port ${port}`);
+});
