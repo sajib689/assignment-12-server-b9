@@ -32,6 +32,13 @@ async function run() {
     const paymentsCollection = await client.db('scholarHub').collection('payments')
     const applicationsCollection = await client.db('scholarHub').collection('applications')
 
+      // jwt post 
+      app.post('/jwt', async (req, res) => {
+        const user = req.body
+        const token = jwt.sign(user, process.env.token, {expiresIn: '1h'})
+        res.send({token})
+      })
+
        // add university
        app.post('/university', async (req, res) => {
         const query = req.body
