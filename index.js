@@ -267,10 +267,14 @@ async function run() {
       res.send(result);
     });
 
-    app.get("/applications",verifyJWT,verifyAdmin, async (req, res) => {
+    app.get("/applications",verifyJWT, async (req, res) => {
       const email = req.query.email;
       const query = email ? { email } : {};
       const result = await applicationsCollection.find(query).toArray();
+      res.send(result);
+    });
+    app.get("/applications",verifyJWT, async (req, res) => {
+      const result = await applicationsCollection.find().toArray();
       res.send(result);
     });
 
