@@ -10,7 +10,7 @@ const app = express();
 const port = process.env.PORT || 3000;
 
 app.use(express.json());
-app.use(cors({ origin: ["http://localhost:5173", "https://api.imgbb.com"] }));
+app.use(cors({ origin: ["http://localhost:5173","https://benevolent-hamster-c76181.netlify.app", "https://api.imgbb.com"] }));
 app.use(cookieParser());
 
 const uri = `mongodb+srv://${process.env.Db_User}:${process.env.Db_Password}@cluster0.2m0rny5.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0`;
