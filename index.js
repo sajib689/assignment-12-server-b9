@@ -110,7 +110,7 @@ async function run() {
       res.send(result);
     });
 
-    app.delete("/university/:id", verifyJWT, verifyAdmin, async (req, res) => {
+    app.delete("/university/:id", async (req, res) => {
       const id = req.params.id;
       const result = await universityCollection.deleteOne({
         _id: new ObjectId(id),
@@ -118,19 +118,30 @@ async function run() {
       res.send(result);
     });
 
-    app.put("/university/:id", verifyJWT, verifyAdmin, async (req, res) => {
+    app.put("/university/:id", async (req, res) => {
       const id = req.params.id;
       const update = req.body;
+      const query = {_id: new ObjectId(id)};
+      const options = {upsert: true};
       const updateUniversity = {
         $set: {
-          ...update,
+        scholarshipName: update.scholarshipName,
+        universityName: update.universityName,
+        universityImage: update.universityImage,
+        country: update.country,
+        city: update.city,
+        universityWorldRank: update.universityWorldRank,
+        subjectName: update.subjectName,
+        scholarshipCategory: update.scholarshipCategory,
+        degree: update.degree,
+        tuitionFees: update.tuitionFees,
+        applicationFees: update.applicationFees,
+        serviceCharge: update.serviceCharge,
+        applicationDeadline: update.applicationDeadline,
+        postDate: update.postDate,
         },
       };
-      const result = await universityCollection.updateOne(
-        { _id: new ObjectId(id) },
-        updateUniversity,
-        { upsert: true }
-      );
+      const result = await universityCollection.updateOne(query,updateUniversity,options);
       res.send(result);
     });
 
@@ -141,14 +152,14 @@ async function run() {
       res.send(result);
     });
 
-    app.get("/reviews", async (req, res) => {
+    app.get("/reviews",verifyJWT, async (req, res) => {
       const email = req.query.email;
       const query = email ? { email } : {};
       const result = await reviewsCollection.find(query).toArray();
       res.send(result);
     });
 
-    app.get("/reviews/:id", async (req, res) => {
+    app.get("/reviews/:id",verifyJWT, async (req, res) => {
       const id = req.params.id;
       const result = await reviewsCollection.findOne({ _id: new ObjectId(id) });
       res.send(result);
@@ -256,14 +267,14 @@ async function run() {
       res.send(result);
     });
 
-    app.get("/applications", async (req, res) => {
+    app.get("/applications",verifyJWT, async (req, res) => {
       const email = req.query.email;
       const query = email ? { email } : {};
       const result = await applicationsCollection.find(query).toArray();
       res.send(result);
     });
 
-    app.get("/applications/:id", async (req, res) => {
+    app.get("/applications/:id",verifyJWT, async (req, res) => {
       const id = req.params.id;
       const result = await applicationsCollection.findOne({
         _id: new ObjectId(id),
